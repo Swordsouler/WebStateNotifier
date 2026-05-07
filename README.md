@@ -56,7 +56,7 @@ docker compose --context myserver logs -f
 ### Option 3 — Sur le serveur directement
 
 ```bash
-git clone <url-du-repo> webstatenotifier
+git clone https://github.com/Swordsouler/WebStateNotifier.git webstatenotifier
 cd webstatenotifier
 
 # Éditer la configuration (voir section Variables d'environnement)
