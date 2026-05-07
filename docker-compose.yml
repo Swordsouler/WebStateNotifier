@@ -24,6 +24,8 @@ services:
       - Monitor__CheckingUpDelaySeconds=30
       # Timeout HTTP par requête
       - Monitor__HttpTimeoutSeconds=10
+      # Fuseau horaire pour les dates dans les emails (format IANA : https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
+      - Monitor__TimeZoneId=Europe/Paris
 
       # --- Configuration SMTP ---
       - Smtp__Host=smtp.gmail.com

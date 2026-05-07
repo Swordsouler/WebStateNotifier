@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WebStateNotifier")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c39f44116f085aa0ece6d1f9f2f4283009f8688b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+54a3d0187fb7efe10896364089e269300c0acb3e")]
 [assembly: System.Reflection.AssemblyProductAttribute("WebStateNotifier")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WebStateNotifier")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

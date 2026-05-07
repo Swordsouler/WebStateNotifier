@@ -6,19 +6,21 @@ using WebStateNotifier.Models;
 
 namespace WebStateNotifier.Services;
 
-public class EmailService(IOptions<SmtpOptions> smtpOptions, ILogger<EmailService> logger)
+public class EmailService(IOptions<SmtpOptions> smtpOptions, IOptions<MonitorOptions> monitorOptions, ILogger<EmailService> logger)
 {
     private readonly SmtpOptions _smtp = smtpOptions.Value;
+    private readonly TimeZoneInfo _timeZone = ResolveTimeZone(monitorOptions.Value.TimeZoneId, logger);
 
     public async Task SendDownNotificationAsync(string url, IEnumerable<string> recipients, DateTimeOffset detectedAt, CancellationToken ct)
     {
+        var local = TimeZoneInfo.ConvertTime(detectedAt, _timeZone);
         var subject = $"[ALERTE] {url} est inaccessible";
         var body = BuildBody(
             title: "Service inaccessible",
             color: "#e74c3c",
             icon: "✖",
             message: $"Le service <strong>{url}</strong> ne répond plus.",
-            detail: $"Panne détectée le : <strong>{detectedAt:dd/MM/yyyy à HH:mm:ss} (UTC)</strong>"
+            detail: $"Panne détectée le : <strong>{local:dd/MM/yyyy à HH:mm:ss} ({_timeZone.StandardName})</strong>"
         );
 
         await SendAsync(subject, body, recipients, ct);
@@ -26,16 +28,30 @@ public class EmailService(IOptions<SmtpOptions> smtpOptions, ILogger<EmailServic
 
     public async Task SendUpNotificationAsync(string url, IEnumerable<string> recipients, DateTimeOffset detectedAt, TimeSpan downtime, CancellationToken ct)
     {
+        var local = TimeZoneInfo.ConvertTime(detectedAt, _timeZone);
         var subject = $"[RÉTABLI] {url} est de nouveau accessible";
         var body = BuildBody(
             title: "Service rétabli",
             color: "#27ae60",
             icon: "✔",
             message: $"Le service <strong>{url}</strong> est de nouveau opérationnel.",
-            detail: $"Rétabli le : <strong>{detectedAt:dd/MM/yyyy à HH:mm:ss} (UTC)</strong><br/>Durée de l'indisponibilité : <strong>{FormatDuration(downtime)}</strong>"
+            detail: $"Rétabli le : <strong>{local:dd/MM/yyyy à HH:mm:ss} ({_timeZone.StandardName})</strong><br/>Durée de l'indisponibilité : <strong>{FormatDuration(downtime)}</strong>"
         );
 
         await SendAsync(subject, body, recipients, ct);
+    }
+
+    private static TimeZoneInfo ResolveTimeZone(string id, ILogger logger)
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById(id);
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            logger.LogWarning("Fuseau horaire '{Id}' introuvable, fallback sur UTC", id);
+            return TimeZoneInfo.Utc;
+        }
     }
 
     private async Task SendAsync(string subject, string htmlBody, IEnumerable<string> recipients, CancellationToken ct)

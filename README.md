@@ -117,6 +117,7 @@ env_file:
 | `Monitor__CheckingDownDelaySeconds` | `60` | | Intervalle en secondes entre chaque vérification quand le site est **UP** |
 | `Monitor__CheckingUpDelaySeconds` | `30` | | Intervalle en secondes entre chaque vérification quand le site est **DOWN** |
 | `Monitor__HttpTimeoutSeconds` | `10` | | Délai maximum d'attente par requête HTTP |
+| `Monitor__TimeZoneId` | `UTC` | | Fuseau horaire des dates dans les emails (format IANA) |
 
 ### SMTP — `Smtp`
 
