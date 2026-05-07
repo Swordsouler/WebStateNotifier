@@ -1,0 +1,9 @@
+**/.git
+**/.gitignore
+**/bin
+**/obj
+**/.vs
+**/*.user
+**/*.md
+.env
+docker-compose*.yml
