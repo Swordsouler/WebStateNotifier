@@ -6,39 +6,5 @@ services:
     image: webstatenotifier:latest
     container_name: webstatenotifier
     restart: unless-stopped
-
-    environment:
-      # --- URL à surveiller ---
-      - Monitor__Url=https://example.com
-
-      # --- Destinataires (séparés par des virgules via JSON array en env var) ---
-      # Docker Compose ne supporte pas les tableaux JSON directement ;
-      # on utilise la notation d'index .NET pour définir plusieurs emails :
-      - Monitor__Emails__0=admin@example.com
-      - Monitor__Emails__1=ops@example.com
-
-      # --- Délais (en secondes) ---
-      # Intervalle de vérification quand le site est UP
-      - Monitor__CheckingDownDelaySeconds=60
-      # Intervalle de vérification quand le site est DOWN
-      - Monitor__CheckingUpDelaySeconds=30
-      # Timeout HTTP par requête
-      - Monitor__HttpTimeoutSeconds=10
-      # Fuseau horaire pour les dates dans les emails (format IANA : https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
-      - Monitor__TimeZoneId=Europe/Paris
-
-      # --- Configuration SMTP ---
-      - Smtp__Host=smtp.gmail.com
-      - Smtp__Port=587
-      - Smtp__Username=votre.email@gmail.com
-      - Smtp__Password=votre_mot_de_passe_applicatif
-      - Smtp__FromAddress=votre.email@gmail.com
-      - Smtp__FromName=WebStateNotifier
-      - Smtp__UseSsl=true
-
-      # --- Niveau de logs ---
-      - Logging__LogLevel__Default=Information
-
-    # Optionnel : fichier .env pour ne pas exposer les secrets dans ce fichier
-    # env_file:
-    #   - .env
+    env_file:
+      - .env
