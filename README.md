@@ -8,7 +8,9 @@ Service de surveillance d'URL qui envoie des notifications par email lorsqu'un s
 
 ```
 Site UP  ──[CheckingDownDelay]──▶ vérification ──▶ toujours UP  ──▶ boucle
-                                               └──▶ DOWN détecté ──▶ email d'alerte
+                                               └──▶ échec ──[CheckingUpDelay]──▶ revérification
+                                                         │  (FailuresBeforeDown échecs de suite)
+                                                    DOWN confirmé ──▶ email d'alerte
                                                          │
                                                [CheckingUpDelay]
                                                          │
@@ -116,6 +118,7 @@ env_file:
 | `Monitor__Emails__1` | _(vide)_ | | Deuxième email (ajouter `__2`, `__3`… pour plus) |
 | `Monitor__CheckingDownDelaySeconds` | `60` | | Intervalle en secondes entre chaque vérification quand le site est **UP** |
 | `Monitor__CheckingUpDelaySeconds` | `30` | | Intervalle en secondes entre chaque vérification quand le site est **DOWN** |
+| `Monitor__FailuresBeforeDown` | `3` | | Nombre d'échecs de suite avant d'envoyer l'alerte : un échec isolé ne prévient personne |
 | `Monitor__HttpTimeoutSeconds` | `10` | | Délai maximum d'attente par requête HTTP |
 | `Monitor__TimeZoneId` | `UTC` | | Fuseau horaire des dates dans les emails (format IANA) |
 

@@ -17,11 +17,13 @@ public class MonitorWorker(
         ValidateConfiguration();
 
         logger.LogInformation(
-            "Démarrage du monitoring de {Url} | Vérification UP toutes les {DownDelay}s, DOWN toutes les {UpDelay}s",
-            _options.Url, _options.CheckingDownDelaySeconds, _options.CheckingUpDelaySeconds);
+            "Démarrage du monitoring de {Url} | Vérification UP toutes les {DownDelay}s, DOWN toutes les {UpDelay}s, alerte après {Failures} échecs de suite",
+            _options.Url, _options.CheckingDownDelaySeconds, _options.CheckingUpDelaySeconds, _options.FailuresBeforeDown);
 
         bool isDown = false;
         DateTimeOffset? downSince = null;
+        int failures = 0;
+        DateTimeOffset? firstFailureAt = null;
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -29,13 +31,24 @@ public class MonitorWorker(
 
             if (!isUp && !isDown)
             {
-                isDown = true;
-                downSince = DateTimeOffset.UtcNow;
-                logger.LogWarning("Service {Url} est DOWN. Raison: {Error}", _options.Url, error);
+                failures++;
+                firstFailureAt ??= DateTimeOffset.UtcNow;
 
-                await TrySendEmailAsync(
-                    () => emailService.SendDownNotificationAsync(_options.Url, _options.Emails, downSince.Value, stoppingToken),
-                    "notification de panne");
+                if (failures < _options.FailuresBeforeDown)
+                {
+                    logger.LogWarning("Service {Url} en échec ({Failures}/{Threshold}). Raison: {Error}",
+                        _options.Url, failures, _options.FailuresBeforeDown, error);
+                }
+                else
+                {
+                    isDown = true;
+                    downSince = firstFailureAt;
+                    logger.LogWarning("Service {Url} est DOWN. Raison: {Error}", _options.Url, error);
+
+                    await TrySendEmailAsync(
+                        () => emailService.SendDownNotificationAsync(_options.Url, _options.Emails, downSince.Value, stoppingToken),
+                        "notification de panne");
+                }
             }
             else if (isUp && isDown)
             {
@@ -48,9 +61,19 @@ public class MonitorWorker(
                     "notification de rétablissement");
 
                 downSince = null;
+                failures = 0;
+                firstFailureAt = null;
             }
             else if (isUp)
             {
+                if (failures > 0)
+                {
+                    logger.LogInformation("Service {Url} de nouveau joignable après {Failures} échec(s), aucune alerte envoyée",
+                        _options.Url, failures);
+                    failures = 0;
+                    firstFailureAt = null;
+                }
+
                 logger.LogDebug("Service {Url} est UP (HTTP {StatusCode})", _options.Url, statusCode);
             }
             else
@@ -58,7 +81,8 @@ public class MonitorWorker(
                 logger.LogWarning("Service {Url} est toujours DOWN. Raison: {Error}", _options.Url, error);
             }
 
-            var delaySeconds = isDown
+            // Un échec est revérifié au rythme de la panne, pour confirmer vite sans attendre le prochain contrôle normal.
+            var delaySeconds = isDown || failures > 0
                 ? _options.CheckingUpDelaySeconds
                 : _options.CheckingDownDelaySeconds;
 
@@ -91,5 +115,8 @@ public class MonitorWorker(
 
         if (_options.CheckingUpDelaySeconds <= 0)
             throw new InvalidOperationException("Monitor:CheckingUpDelaySeconds doit être supérieur à 0.");
+
+        if (_options.FailuresBeforeDown <= 0)
+            throw new InvalidOperationException("Monitor:FailuresBeforeDown doit être supérieur à 0.");
     }
 }

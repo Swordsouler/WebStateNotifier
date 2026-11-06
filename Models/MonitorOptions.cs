@@ -8,6 +8,7 @@ public class MonitorOptions
     public List<string> Emails { get; set; } = [];
     public int CheckingDownDelaySeconds { get; set; } = 60;
     public int CheckingUpDelaySeconds { get; set; } = 30;
+    public int FailuresBeforeDown { get; set; } = 3;
     public int HttpTimeoutSeconds { get; set; } = 10;
     public string TimeZoneId { get; set; } = "UTC";
 }
