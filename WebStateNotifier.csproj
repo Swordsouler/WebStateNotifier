@@ -7,6 +7,8 @@
     <UserSecretsId>websatenotifier-secrets</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <RootNamespace>WebStateNotifier</RootNamespace>
+    <!-- Le projet de tests vit sous tests/ : ses fichiers ne font pas partie de l'application. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);tests/**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>

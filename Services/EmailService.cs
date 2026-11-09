@@ -1,3 +1,4 @@
+using System.Net;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Options;
@@ -6,40 +7,52 @@ using WebStateNotifier.Models;
 
 namespace WebStateNotifier.Services;
 
-public class EmailService(IOptions<SmtpOptions> smtpOptions, IOptions<MonitorOptions> monitorOptions, ILogger<EmailService> logger)
+public interface IEmailService
+{
+    Task SendDownNotificationAsync(SiteMonitor monitor, DateTimeOffset detectedAt, CancellationToken ct);
+    Task SendUpNotificationAsync(SiteMonitor monitor, DateTimeOffset detectedAt, TimeSpan downtime, CancellationToken ct);
+}
+
+/// <summary>
+/// Envoie les alertes d'un site à ses seuls destinataires, sous le nom donné dans sa configuration.
+/// </summary>
+public class EmailService(IOptions<SmtpOptions> smtpOptions, IOptions<MonitorOptions> monitorOptions, ILogger<EmailService> logger) : IEmailService
 {
     private readonly SmtpOptions _smtp = smtpOptions.Value;
     private readonly TimeZoneInfo _timeZone = ResolveTimeZone(monitorOptions.Value.TimeZoneId, logger);
 
-    public async Task SendDownNotificationAsync(string url, IEnumerable<string> recipients, DateTimeOffset detectedAt, CancellationToken ct)
+    public async Task SendDownNotificationAsync(SiteMonitor monitor, DateTimeOffset detectedAt, CancellationToken ct)
     {
         var local = TimeZoneInfo.ConvertTime(detectedAt, _timeZone);
-        var subject = $"[ALERTE] {url} est inaccessible";
+        var subject = $"[ALERTE] {monitor.Name} est inaccessible";
         var body = BuildBody(
             title: "Service inaccessible",
             color: "#e74c3c",
             icon: "✖",
-            message: $"Le service <strong>{url}</strong> ne répond plus.",
+            message: $"Le service {Describe(monitor)} ne répond plus.",
             detail: $"Panne détectée le : <strong>{local:dd/MM/yyyy à HH:mm:ss} ({_timeZone.StandardName})</strong>"
         );
 
-        await SendAsync(subject, body, recipients, ct);
+        await SendAsync(subject, body, monitor.Recipients, ct);
     }
 
-    public async Task SendUpNotificationAsync(string url, IEnumerable<string> recipients, DateTimeOffset detectedAt, TimeSpan downtime, CancellationToken ct)
+    public async Task SendUpNotificationAsync(SiteMonitor monitor, DateTimeOffset detectedAt, TimeSpan downtime, CancellationToken ct)
     {
         var local = TimeZoneInfo.ConvertTime(detectedAt, _timeZone);
-        var subject = $"[RÉTABLI] {url} est de nouveau accessible";
+        var subject = $"[RÉTABLI] {monitor.Name} est de nouveau accessible";
         var body = BuildBody(
             title: "Service rétabli",
             color: "#27ae60",
             icon: "✔",
-            message: $"Le service <strong>{url}</strong> est de nouveau opérationnel.",
+            message: $"Le service {Describe(monitor)} est de nouveau opérationnel.",
             detail: $"Rétabli le : <strong>{local:dd/MM/yyyy à HH:mm:ss} ({_timeZone.StandardName})</strong><br/>Durée de l'indisponibilité : <strong>{FormatDuration(downtime)}</strong>"
         );
 
-        await SendAsync(subject, body, recipients, ct);
+        await SendAsync(subject, body, monitor.Recipients, ct);
     }
+
+    private static string Describe(SiteMonitor monitor) =>
+        $"<strong>{WebUtility.HtmlEncode(monitor.Name)}</strong> ({WebUtility.HtmlEncode(monitor.Url)})";
 
     private static TimeZoneInfo ResolveTimeZone(string id, ILogger logger)
     {
@@ -65,6 +78,13 @@ public class EmailService(IOptions<SmtpOptions> smtpOptions, IOptions<MonitorOpt
         message.Subject = subject;
         message.Body = new TextPart("html") { Text = htmlBody };
 
+        await DeliverAsync(message, ct);
+        logger.LogInformation("Email '{Subject}' envoyé à {Count} destinataire(s)", subject, message.To.Count);
+    }
+
+    // Envoi SMTP, isolé pour que les tests puissent intercepter le message construit.
+    protected virtual async Task DeliverAsync(MimeMessage message, CancellationToken ct)
+    {
         using var client = new SmtpClient();
         try
         {
@@ -78,7 +98,6 @@ public class EmailService(IOptions<SmtpOptions> smtpOptions, IOptions<MonitorOpt
                 await client.AuthenticateAsync(_smtp.Username, _smtp.Password, ct);
 
             await client.SendAsync(message, ct);
-            logger.LogInformation("Email '{Subject}' envoyé à {Count} destinataire(s)", subject, message.To.Count);
         }
         finally
         {

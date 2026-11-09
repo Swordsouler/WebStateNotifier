@@ -1,31 +1,33 @@
 using System.Net.Http;
-using Microsoft.Extensions.Options;
-using WebStateNotifier.Models;
 
 namespace WebStateNotifier.Services;
 
-public class UrlHealthChecker(IHttpClientFactory httpClientFactory, IOptions<MonitorOptions> options, ILogger<UrlHealthChecker> logger)
+public interface IUrlHealthChecker
 {
-    private readonly MonitorOptions _options = options.Value;
+    Task<(bool IsUp, int? StatusCode, string? Error)> CheckAsync(string url, CancellationToken ct);
+}
 
-    public async Task<(bool IsUp, int? StatusCode, string? Error)> CheckAsync(CancellationToken ct)
+public class UrlHealthChecker(IHttpClientFactory httpClientFactory, ILogger<UrlHealthChecker> logger) : IUrlHealthChecker
+{
+    public async Task<(bool IsUp, int? StatusCode, string? Error)> CheckAsync(string url, CancellationToken ct)
     {
         using var client = httpClientFactory.CreateClient("monitor");
         try
         {
-            var response = await client.GetAsync(_options.Url, ct);
+            using var response = await client.GetAsync(url, ct);
             var isUp = response.IsSuccessStatusCode;
-            logger.LogDebug("Vérification {Url} → HTTP {StatusCode}", _options.Url, (int)response.StatusCode);
+            logger.LogDebug("Vérification {Url} → HTTP {StatusCode}", url, (int)response.StatusCode);
             return (isUp, (int)response.StatusCode, isUp ? null : $"HTTP {(int)response.StatusCode}");
         }
-        catch (TaskCanceledException)
+        // Un arrêt du service n'est pas un échec du site : seule l'expiration du délai HTTP en est un.
+        catch (TaskCanceledException) when (!ct.IsCancellationRequested)
         {
-            logger.LogWarning("Timeout lors de la vérification de {Url}", _options.Url);
+            logger.LogWarning("Timeout lors de la vérification de {Url}", url);
             return (false, null, "Timeout");
         }
         catch (HttpRequestException ex)
         {
-            logger.LogWarning("Erreur réseau pour {Url}: {Message}", _options.Url, ex.Message);
+            logger.LogWarning("Erreur réseau pour {Url}: {Message}", url, ex.Message);
             return (false, null, ex.Message);
         }
     }

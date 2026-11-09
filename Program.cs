@@ -20,8 +20,9 @@ builder.Services.AddHttpClient("monitor", (sp, client) =>
     client.DefaultRequestHeaders.UserAgent.ParseAdd("WebStateNotifier/1.0");
 });
 
-builder.Services.AddSingleton<EmailService>();
-builder.Services.AddSingleton<UrlHealthChecker>();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<IEmailService, EmailService>();
+builder.Services.AddSingleton<IUrlHealthChecker, UrlHealthChecker>();
 builder.Services.AddHostedService<MonitorWorker>();
 
 var host = builder.Build();
