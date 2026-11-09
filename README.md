@@ -130,7 +130,7 @@ Exemple : StreamBlades, dont les pannes ne préviennent qu'une adresse, à côt�
 ```env
 Monitors__0__Name=StreamBlades
 Monitors__0__Url=https://streamblades.com/health
-Monitors__0__Recipients__0=swordsouler.nsl@gmail.com
+Monitors__0__Recipients__0=alertes@example.com
 
 Monitors__1__Name=Mon autre site
 Monitors__1__Url=https://example.com

@@ -169,7 +169,7 @@ public class MonitorConfigurationTests
 
         var streamBlades = Assert.Single(monitors, m => m.Name == "StreamBlades");
         Assert.Equal("https://streamblades.com/health", streamBlades.Url);
-        Assert.Equal(new[] { "swordsouler.nsl@gmail.com" }, streamBlades.Recipients);
+        Assert.Equal(new[] { "alertes@example.com" }, streamBlades.Recipients);
         Assert.Equal(2, monitors.Count);
     }
 
