@@ -12,7 +12,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MailKit" Version="4.10.0" />
+    <PackageReference Include="MailKit" Version="4.16.0" />
+    <!-- MimeKit ne demande que System.Security.Cryptography.Pkcs 8.0.1, touché par CVE-2026-84008
+         et CVE-2026-70162 : on impose la version corrigée tant que MimeKit n'exige pas mieux. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="8.0.2" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.4" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.4" />
   </ItemGroup>
