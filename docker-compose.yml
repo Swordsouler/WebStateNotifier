@@ -1,3 +1,6 @@
+# Nom du projet Compose fixé ici : il ne dépend plus du nom du dossier où le dépôt est cloné.
+name: webstatenotifier
+
 services:
   webstatenotifier:
     build:

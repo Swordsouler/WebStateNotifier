@@ -16,7 +16,7 @@ scp -r `
     ".\appsettings.json" `
     ".\Dockerfile" `
     ".\docker-compose.yml" `
-    ".\. dockerignore" `
+    ".\.dockerignore" `
     "${Server}:${RemotePath}/"
 
 Write-Host "==> Lancement du conteneur sur le serveur ..."
